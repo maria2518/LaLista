@@ -114,7 +114,7 @@ class MyHomePage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset('assets/tutorial1.PNG'),
+            Image.asset('assets/lalista.png', width: 200, height: 200),
             SizedBox(height: 40),
             TextButton.icon(
               onPressed: () {

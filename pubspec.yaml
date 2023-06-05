@@ -1,4 +1,4 @@
-name: lalista
+name: tutorial_flutter
 description: A new Flutter project.
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -61,7 +61,7 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
-    - assets/lalista.PNG
+    - assets/lalista.png
     - assets/tutorial1.PNG
     - assets/tutorial2.PNG
     - assets/tutorial3.PNG
