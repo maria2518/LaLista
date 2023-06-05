@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
@@ -89,7 +91,6 @@ class _AvatarGlowState extends State<AvatarGlow>
   }
 }
 
-
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -113,7 +114,7 @@ class MyHomePage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset('path/to/logo.png'),
+            Image.asset('assets/tutorial1.PNG'),
             SizedBox(height: 40),
             TextButton.icon(
               onPressed: () {
@@ -158,7 +159,10 @@ class MyHomePage extends StatelessWidget {
             SizedBox(height: 40),
             TextButton.icon(
               onPressed: () {
-
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => MyScreen()),
+                );
               },
               icon: Icon(Icons.help_outline,size:40),
               label: Text('Tutorial'),
@@ -178,8 +182,6 @@ class MyHomePage extends StatelessWidget {
     );
   }
 }
-
-
 
 class SecondScreen extends StatefulWidget {
   @override
@@ -241,7 +243,119 @@ class MyList extends StatelessWidget {
     speech.stop();
   }
 
+  void showAddItemDialogVoice(BuildContext context) {
+    String dictatedText = 'Patatas';
 
+    Timer(Duration(milliseconds: 1000), () {
+      setState(() {
+        dictatedText = '';
+      });
+    });
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (BuildContext context) {
+          return Scaffold(
+            appBar: AppBar(
+              title: Text('Añadir elemento por voz'),
+            ),
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text('Haz clic en el botón para empezar a escuchar:',
+                      style: TextStyle(fontSize: 40),
+                      textAlign: TextAlign.justify,
+                    ),
+                    SizedBox(height: 25),
+                    Text(
+                      dictatedText,
+                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 16),
+                    Align(
+                      alignment: Alignment.bottomCenter,
+                      child: Column(
+                        children: [
+                          AvatarGlow(
+                            animate: true,
+                            glowColor: Theme.of(context).primaryColor,
+                            endRadius: 75.0,
+                            duration: const Duration(milliseconds: 2000),
+                            repeatPauseDuration: const Duration(milliseconds: 100),
+                            repeat: true,
+                            child: FloatingActionButton(
+                              onPressed: _listen,
+                              child: Icon(_isListening ? Icons.mic : Icons.mic_none),
+                            ),
+                          ),
+                          SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              TextButton(
+                                onPressed: () {
+                                  stopListening();
+                                  Navigator.pop(context);
+                                },
+                                child: Text('Cancelar', style: TextStyle(fontSize: 30.0)),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  stopListening();
+                                  Navigator.pop(context);
+                                  // Aquí puedes realizar alguna acción con el texto reconocido
+                                },
+                                child: Text('Añadir', style: TextStyle(fontSize: 30.0)),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+
+
+
+
+
+
+  void _listen() async {
+    if (!_isListening) {
+      bool available = await _speech.initialize(
+        onStatus: (val) => print('onStatus: $val'),
+        onError: (val) => print('onError: $val'),
+      );
+      if (available) {
+        setState(() => _isListening = true);
+        _speech.listen(
+          onResult: (val) => setState(() {
+            _text = val.recognizedWords;
+            if (val.hasConfidenceRating && val.confidence > 0) {
+              _confidence = val.confidence;
+            }
+          }),
+        );
+      }
+    } else {
+      setState(() => _isListening = false);
+      _speech.stop();
+    }
+  }
 
   void showAddItemDialog(BuildContext context) {
     String newItem = '';
@@ -308,6 +422,72 @@ class MyList extends StatelessWidget {
       ),
     );
   }
+  void showDialogGuardar(BuildContext context) {
+    String newItem = '';
+
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        fullscreenDialog: true,
+        barrierDismissible: true,
+        pageBuilder: (BuildContext context, _, __) {
+          return Scaffold(
+            appBar: AppBar(
+              title: Text('Guardar lista'),
+            ),
+            body: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Introduce nombre de la lista:',
+                          style: TextStyle(fontSize: 30.0),
+                        ),
+                        SizedBox(height: 30.0),
+                        TextField(
+                          style: TextStyle(fontSize: 40.0), // Tamaño del texto aumentado
+                            onChanged: (value) {
+                              listName = value;
+                            },
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 30.0),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          final dbHelper = DatabaseHelper._instance;
+                          dbHelper.saveList(itemList, listName);
+                          Navigator.pop(context);
+                        },
+                        child: Text('Añadir', style: TextStyle(fontSize: 30.0)),
+
+                      ),
+                      SizedBox(width: 8.0),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        child: Text('Cancelar', style: TextStyle(fontSize: 30.0)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
 
 
   void saveList(List<String> items, String name) {
@@ -325,6 +505,7 @@ class MyList extends StatelessWidget {
       appBar: AppBar(
         title: Text('Añadir lista'),
       ),
+      backgroundColor: Colors.black,
       body: Column(
         children: [
           Row(
@@ -360,7 +541,7 @@ class MyList extends StatelessWidget {
               Expanded(
                 child: ElevatedButton(
                   onPressed: () {
-
+                    showAddItemDialogVoice(context);
                   },
                   style: ElevatedButton.styleFrom(
                     minimumSize: Size(100, 108),
@@ -397,34 +578,45 @@ class MyList extends StatelessWidget {
                 : ListView.builder(
               itemCount: itemList.length,
               itemBuilder: (BuildContext context, int index) {
-                return ListTile(
-                  leading: IconButton(
-                    icon: Icon(Icons.volume_up_rounded, size: 40),
-                    onPressed: () async {
-                      print(itemList[index]);
-                    },
+                return Card(
+                  color: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  title: Text(
-                    itemList[index],
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      decoration: itemSelected[index]
-                          ? TextDecoration.lineThrough
-                          : TextDecoration.none,
-                      fontSize: 30,
+                  child: ListTile(
+                    tileColor: Colors.white, // Agregado
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                  ),
-                  trailing: IconButton(
-                    icon: Icon(Icons.delete, size: 40),
-                    onPressed: () {
-                      removeItem(index);
+                    leading: IconButton(
+                      icon: Icon(Icons.volume_up_rounded, size: 40),
+                      onPressed: () async {
+                        print(itemList[index]);
+                      },
+                    ),
+                    title: Text(
+                      itemList[index],
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        decoration: itemSelected[index]
+                            ? TextDecoration.lineThrough
+                            : TextDecoration.none,
+                        fontSize: 30,
+                        color: itemSelected[index] ? Colors.red : Colors.black,
+                      ),
+                    ),
+                    trailing: IconButton(
+                      icon: Icon(Icons.delete, size: 40),
+                      onPressed: () {
+                        removeItem(index);
+                      },
+                    ),
+                    onTap: () {
+                      setState(() {
+                        itemSelected[index] = !itemSelected[index];
+                      });
                     },
                   ),
-                  onTap: () {
-                    setState(() {
-                      itemSelected[index] = !itemSelected[index];
-                    });
-                  },
                 );
               },
             ),
@@ -439,9 +631,18 @@ class MyList extends StatelessWidget {
                       context: context,
                       builder: (BuildContext context) {
                         return AlertDialog(
-                          title: Text('Confirmar eliminación'),
+                          title: Text(
+                            'Confirmar eliminación',
+                            style: TextStyle(
+                              fontSize: 30,
+                            ),
+                          ),
                           content: Text(
-                              '¿Estás seguro de que deseas eliminar la lista?'),
+                            '¿Estás seguro de que deseas eliminar la lista?',
+                            style: TextStyle(
+                              fontSize: 25,
+                            ),
+                          ),
                           actions: [
                             TextButton(
                               onPressed: () {
@@ -450,13 +651,23 @@ class MyList extends StatelessWidget {
                                 });
                                 Navigator.pop(context);
                               },
-                              child: Text('Eliminar'),
+                              child: Text(
+                                'Eliminar',
+                                style: TextStyle(
+                                  fontSize: 23,
+                                ),
+                              ),
                             ),
                             TextButton(
                               onPressed: () {
                                 Navigator.pop(context);
                               },
-                              child: Text('Cancelar'),
+                              child: Text(
+                                'Cancelar',
+                                style: TextStyle(
+                                  fontSize: 23,
+                                ),
+                              ),
                             ),
                           ],
                         );
@@ -489,40 +700,7 @@ class MyList extends StatelessWidget {
               Expanded(
                 child: ElevatedButton(
                   onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return AlertDialog(
-                          title: Text('Guardar lista'),
-                          content: TextField(
-                            onChanged: (value) {
-                              listName = value;
-                            },
-                            decoration: InputDecoration(
-                              hintText: 'Nombre de la lista',
-                            ),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () {
-                                // Guardar la lista en la base de datos
-                                final dbHelper = DatabaseHelper._instance;
-                                dbHelper.saveList(itemList, listName);
-
-                                Navigator.pop(context);
-                              },
-                              child: Text('Guardar'),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pop(context);
-                              },
-                              child: Text('Cancelar'),
-                            ),
-                          ],
-                        );
-                      },
-                    );
+                    showDialogGuardar(context);
                   },
                   style: ElevatedButton.styleFrom(
                     minimumSize: Size(100, 80),
@@ -586,7 +764,6 @@ class MyList extends StatelessWidget {
     );
   }
 }
-
 
 
 
@@ -694,15 +871,16 @@ class _SavedListsScreenState extends State<SavedListsScreen> {
 
   void deleteList(String name) async {
     final dbHelper = DatabaseHelper._instance;
-    await dbHelper.deleteList(name); // Call the deleteList method from DatabaseHelper
+    await dbHelper.deleteList(
+        name); // Call the deleteList method from DatabaseHelper
 
     setState(() {
-      savedLists.remove(name); // Remove the deleted list from the savedLists list
+      savedLists.remove(
+          name); // Remove the deleted list from the savedLists list
     });
 
     print('Lista "$name" eliminada');
   }
-
 
 
   @override
@@ -711,6 +889,7 @@ class _SavedListsScreenState extends State<SavedListsScreen> {
       appBar: AppBar(
         title: Text('Mis Listas'),
       ),
+      backgroundColor: Colors.black,
       body: savedLists.isEmpty
           ? Center(
         child: Text(
@@ -721,37 +900,114 @@ class _SavedListsScreenState extends State<SavedListsScreen> {
           : ListView.builder(
         itemCount: savedLists.length,
         itemBuilder: (BuildContext context, int index) {
-          return ListTile(
-            leading: IconButton(
-              icon: Icon(Icons.volume_up_rounded, size: 40),
-              onPressed: () async {
-              },
+          return Card(
+            color: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10.0),
             ),
-            title: Text(savedLists[index],
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 30,
+            child: ListTile(
+              tileColor: Colors.white,
+              leading: IconButton(
+                icon: Icon(Icons.volume_up_rounded, size: 40),
+                onPressed: () async {},
               ),
-            ),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      ListDetailScreen(listName: savedLists[index]),
+              title: Text(
+                savedLists[index],
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 30,
                 ),
-              );
-            },
-            trailing: IconButton(
-              icon: Icon(Icons.delete, size: 40),
-              onPressed: () {
-                // Eliminar la lista
-                deleteList(savedLists[index]);
+              ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        ListDetailScreen(
+                          listName: savedLists[index],
+                        ),
+                  ),
+                );
               },
+              trailing: IconButton(
+                icon: Icon(Icons.delete, size: 40),
+                onPressed: () {
+                  // Eliminar la lista
+                  deleteList(savedLists[index]);
+                },
+              ),
             ),
           );
         },
-      )
+      ),
+      bottomNavigationBar: Container(
+        width: double.infinity,
+        height: 100,
+        child: ElevatedButton.icon(
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: Text(
+                    'Confirmar eliminación',
+                    style: TextStyle(
+                      fontSize: 30,
+                    ),
+                  ),
+                  content: Text(
+                    '¿Estás seguro de que deseas eliminar todas las listas?',
+                    style: TextStyle(
+                      fontSize: 25,
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          savedLists.clear();
+                        });
+                        Navigator.pop(context);
+                      },
+                      child: Text(
+                        'Eliminar',
+                        style: TextStyle(
+                          fontSize: 23,
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      child: Text(
+                        'Cancelar',
+                        style: TextStyle(
+                          fontSize: 23,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+          style: ElevatedButton.styleFrom(
+            padding: EdgeInsets.symmetric(vertical: 20),
+            primary: Colors.red,
+          ),
+          icon: Icon(
+            Icons.delete,
+            size: 40,
+          ),
+          label: Text(
+            'Eliminar Todas las Listas',
+            style: TextStyle(
+              fontSize: 23,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -884,6 +1140,7 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
       appBar: AppBar(
         title: Text(widget.listName),
       ),
+      backgroundColor: Colors.black,
       body: Column(
         children: [
           Row(
@@ -918,10 +1175,8 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
               ),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () { Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => SpeechScreen()),
-                  );
+                  onPressed: () {
+                    // Aquí puedes implementar la lógica para añadir elementos por voz
                   },
                   style: ElevatedButton.styleFrom(
                     minimumSize: Size(100, 108),
@@ -951,34 +1206,40 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
             child: ListView.builder(
               itemCount: itemList.length,
               itemBuilder: (context, index) {
-                return ListTile(
-                  leading: IconButton(
-                    icon: Icon(Icons.volume_up_rounded, size: 40),
-                    onPressed: () async {
-                    },
+                return Card(
+                  color: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  title: GestureDetector(
-                    onTap: () {
-                      toggleItemSelection(index);
-                    },
-                    child: Text(
-                      itemList[index],
-                      style: TextStyle(
-                        decoration: itemSelected[index]
-                            ? TextDecoration.lineThrough
-                            : TextDecoration.none,
-                        fontSize: 30,
-                      ),
-                      textAlign: TextAlign.center,
+                  child: ListTile(
+                    leading: IconButton(
+                      icon: Icon(Icons.volume_up_rounded, size: 40),
+                      onPressed: () async {
+                        // Aquí puedes implementar la lógica para reproducir el elemento
+                      },
                     ),
-
-                ),
-                trailing: IconButton(
-                icon: Icon(Icons.delete, size: 40),
-                onPressed: () {
-                  deleteListItem(itemList[index]);
-                },
-                ),
+                    title: GestureDetector(
+                      onTap: () {
+                        toggleItemSelection(index);
+                      },
+                      child: Text(
+                        itemList[index],
+                        style: TextStyle(
+                          decoration: itemSelected[index]
+                              ? TextDecoration.lineThrough
+                              : TextDecoration.none,
+                          fontSize: 30, color: itemSelected[index] ? Colors.red : Colors.black,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    trailing: IconButton(
+                      icon: Icon(Icons.delete, size: 40),
+                      onPressed: () {
+                        deleteListItem(itemList[index]);
+                      },
+                    ),
+                  ),
                 );
               },
             ),
@@ -993,8 +1254,18 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
                       context: context,
                       builder: (BuildContext context) {
                         return AlertDialog(
-                          title: Text('Confirmar eliminación'),
-                          content: Text('¿Estás seguro de que deseas eliminar la lista?'),
+                          title: Text(
+                            'Confirmar eliminación',
+                            style: TextStyle(
+                              fontSize: 30,
+                            ),
+                          ),
+                          content: Text(
+                            '¿Estás seguro de que deseas eliminar la lista?',
+                            style: TextStyle(
+                              fontSize: 25,
+                            ),
+                          ),
                           actions: [
                             TextButton(
                               onPressed: () {
@@ -1003,13 +1274,23 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
                                 });
                                 Navigator.pop(context);
                               },
-                              child: Text('Eliminar'),
+                              child: Text(
+                                'Eliminar',
+                                style: TextStyle(
+                                  fontSize: 23,
+                                ),
+                              ),
                             ),
                             TextButton(
                               onPressed: () {
                                 Navigator.pop(context);
                               },
-                              child: Text('Cancelar'),
+                              child: Text(
+                                'Cancelar',
+                                style: TextStyle(
+                                  fontSize: 23,
+                                ),
+                              ),
                             ),
                           ],
                         );
@@ -1139,6 +1420,78 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
     );
   }
 }
+class ImageSlider extends StatefulWidget {
+  final List<ImageProvider> imageProviders;
+
+  ImageSlider({required this.imageProviders});
+
+  @override
+  _ImageSliderState createState() => _ImageSliderState();
+}
+
+class _ImageSliderState extends State<ImageSlider> {
+  final _pageController = PageController();
+  int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController.addListener(() {
+      setState(() {
+        _currentPage = _pageController.page!.round();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Expanded(
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: widget.imageProviders.length,
+            itemBuilder: (BuildContext context, int index) {
+              return Image(image: widget.imageProviders[index]);
+            },
+          ),
+        ),
+        SizedBox(height: 10),
+        Text(
+          'Imagen ${_currentPage + 1} de ${widget.imageProviders.length}',
+          style: TextStyle(fontSize: 25),
+        ),
+      ],
+    );
+  }
+}
+
+class MyScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Tutorial'),
+      ),
+      body: ImageSlider(
+        imageProviders: [
+          AssetImage('assets/tutorial1.PNG'),
+          AssetImage('assets/tutorial2.PNG'),
+          AssetImage('assets/tutorial3.PNG'),
+          AssetImage('assets/tutorial4.PNG'),
+          AssetImage('assets/tutorial5.PNG'),
+        ],
+      ),
+    );
+  }
+}
+
 
 
 
